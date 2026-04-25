@@ -2,3 +2,5 @@ tensorflow==2.20.0
 matplotlib==3.10.7
 pyyaml==6.0.3
 dvc
+dvc[azure]
+azure-storage-blob==12.14.0

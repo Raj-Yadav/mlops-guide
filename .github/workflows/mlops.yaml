@@ -18,11 +18,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10' # Update to your project's Python version
+          python-version: '3.12' # Update to your project's Python version
 
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-freeze.txt
           # The azure extra is mandatory for DVC to communicate with Azure Blob Storage
           pip install "dvc[azure]" 
 

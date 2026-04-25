@@ -1,46 +1,46 @@
-# name: MLOps Pipeline
+name: MLOps Pipeline
 
-# on:
-#   push:
-#     branches: [ "main" ]
+on:
+  push:
+    branches: [ "main" ]
   
 
-# jobs:
-#   reproduce:
-#     runs-on: ubuntu-latest
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
     
-#     steps:
-#       - name: Checkout Repository
-#         uses: actions/checkout@v3
-#         with:
-#           fetch-depth: 0 # Important for comparing metrics across branches
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Important for comparing metrics across branches
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.12' # Update to your project's Python version
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12' # Update to your project's Python version
 
-#       - name: Install Dependencies
-#         run: |
-#           pip install -r requirements.txt
-#           # The azure extra is mandatory for DVC to communicate with Azure Blob Storage
-#           pip install "dvc[azure]" 
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          # The azure extra is mandatory for DVC to communicate with Azure Blob Storage
+          pip install "dvc[azure]" 
 
-#       - name: Pull Data from Azure Storage
-#         env:
-#           # DVC automatically looks for this environment variable when accessing an azure:// remote
-#           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-#         run: |
-#           dvc pull -r myremote
+      - name: Pull Data from Azure Storage
+        env:
+          # DVC automatically looks for this environment variable when accessing an azure:// remote
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: |
+          dvc pull 
 
-#       - name: Reproduce the ML Pipeline
-#         run: |
-#           dvc repro
+      - name: Reproduce the ML Pipeline
+        run: |
+          dvc repro
 
-#       - name: Generate Metrics Report
-#         run: |
-#           # Compare the current run's metrics with the main branch
-#           dvc metrics diff main --show-md >> report.md
+      - name: Generate Metrics Report
+        run: |
+          # Compare the current run's metrics with the main branch
+          dvc metrics diff main --show-md >> report.md
           
-#           # Optional: If you are using CML (Continuous Machine Learning) as in the tutorial
-#           # cml comment create report.md
+          # Optional: If you are using CML (Continuous Machine Learning) as in the tutorial
+          # cml comment create report.md

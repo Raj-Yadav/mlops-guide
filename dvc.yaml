@@ -1,32 +1,32 @@
 stages:
   prepare:
-    cmd: python src\prepare.py data\raw data\prepared
+    cmd: python src/prepare.py data/raw data/prepared
     deps:
-    - data\raw
-    - src\prepare.py
-    - src\utils\seed.py
+    - data/raw
+    - src/prepare.py
+    - src/utils/seed.py
     params:
     - prepare
     outs:
-    - data\prepared
+    - data/prepared
   train:
-    cmd: python src\train.py data\prepared model
+    cmd: python src/train.py data/prepared model
     deps:
-    - data\prepared
-    - src\train.py
-    - src\utils\seed.py
+    - data/prepared
+    - src/train.py
+    - src/utils/seed.py
     params:
     - train
     outs:
     - model
   evaluate:
-    cmd: python src\evaluate.py model data\prepared
+    cmd: python src/evaluate.py model data/prepared
     deps:
     - model
-    - src\evaluate.py
+    - src/evaluate.py
     metrics:
-    - evaluation\metrics.json
+    - evaluation/metrics.json
     plots:
-    - evaluation\plots\confusion_matrix.png
-    - evaluation\plots\pred_preview.png
-    - evaluation\plots\training_history.png
+    - evaluation/plots/confusion_matrix.png
+    - evaluation/plots/pred_preview.png
+    - evaluation/plots/training_history.png

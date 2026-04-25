@@ -1,46 +1,95 @@
 name: MLOps Pipeline
 
 on:
+  # Runs on pushes targeting main branch
   push:
-    branches: [ "main" ]
-  
+    branches:
+      - main
+  # Runs on pull requests
+  pull_request:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-  reproduce:
+  train-and-report:
+    # write-all permission is required for CML to post comments on Pull Requests
+    permissions: write-all 
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Important for comparing metrics across branches
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Update to your project's Python version
+          python-version: '3.12' # Kept your current Python version
+          cache: pip
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
           # The azure extra is mandatory for DVC to communicate with Azure Blob Storage
-          pip install "dvc[azure]" 
+          pip install "dvc[azure]"
 
-      - name: Pull Data from Azure Storage
+      - name: Train model
         env:
-          # DVC automatically looks for this environment variable when accessing an azure:// remote
+          # Inject Azure credentials directly into the train step
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-        run: |
-          dvc pull 
+        # --pull automatically fetches data from Azure before reproducing
+        run: dvc repro --pull
 
-      - name: Reproduce the ML Pipeline
-        run: |
-          dvc repro
+      - name: Setup CML
+        if: github.event_name == 'pull_request'
+        uses: iterative/setup-cml@v2
+        with:
+          version: '0.20.6'
 
-      - name: Generate Metrics Report
+      - name: Create CML report
+        if: github.event_name == 'pull_request'
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Compare the current run's metrics with the main branch
+          # Fetch all other Git branches
+          git fetch --depth=1 origin main:main
+
+          # Add title to the report
+          echo "# Experiment Report (${{ github.sha }})" >> report.md
+
+          # Compare parameters to main branch
+          echo "## Params workflow vs. main" >> report.md
+          dvc params diff main --md >> report.md
+
+          # Compare metrics to main branch
+          echo "## Metrics workflow vs. main" >> report.md
           dvc metrics diff main --md >> report.md
-          
-          # Optional: If you are using CML (Continuous Machine Learning) as in the tutorial
-          # cml comment create report.md
+
+          # Compare plots (images) to main branch
+          dvc plots diff main
+
+          # Create plots
+          echo "## Plots" >> report.md
+
+          # Create training history plot
+          echo "### Training History" >> report.md
+          echo "#### main" >> report.md
+          echo '![](./dvc_plots/static/main_evaluation_plots_training_history.png "Training History")' >> report.md
+          echo "#### workspace" >> report.md
+          echo '![](./dvc_plots/static/workspace_evaluation_plots_training_history.png "Training History")' >> report.md
+
+          # Create predictions preview
+          echo "### Predictions Preview" >> report.md
+          echo "#### main" >> report.md
+          echo '![](./dvc_plots/static/main_evaluation_plots_pred_preview.png "Predictions Preview")' >> report.md
+          echo "#### workspace" >> report.md
+          echo '![](./dvc_plots/static/workspace_evaluation_plots_pred_preview.png "Predictions Preview")' >> report.md
+
+          # Create confusion matrix
+          echo "### Confusion Matrix" >> report.md
+          echo "#### main" >> report.md
+          echo '![](./dvc_plots/static/main_evaluation_plots_confusion_matrix.png "Confusion Matrix")' >> report.md
+          echo "#### workspace" >> report.md
+          echo '![](./dvc_plots/static/workspace_evaluation_plots_confusion_matrix.png "Confusion Matrix")' >> report.md
+
+          # Publish the CML report
+          cml comment update --target=pr --publish report.md

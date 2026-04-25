@@ -20,5 +20,4 @@ dvc_plots/
 
 # DVC tracked data (Example: ignoring the actual model file, but not the .dvc pointer)
 /model
-/evaluation
-/data
+

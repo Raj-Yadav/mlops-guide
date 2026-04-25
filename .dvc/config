@@ -1,6 +1,5 @@
 [core]
-    analytics = false
-    remote = myremote
-['remote "myremote"']
-    url = azure://dvcdata
-    account_name = dvcmlopsblobstorage
+    remote = azureremote
+['remote "azureremote"']
+    url = azure://dvc
+    account_name = dvcmloblobstorage

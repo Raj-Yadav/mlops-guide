@@ -28,16 +28,16 @@ stages:
     outs:
     - path: data/prepared
       hash: md5
-      md5: 2b9426a7215b4112534a6a08eaa70e63.dir
-      size: 6616407
+      md5: 97b0a258483777ade7e701028de020ab.dir
+      size: 6616408
       nfiles: 8
   train:
     cmd: python src/train.py data/prepared model
     deps:
     - path: data/prepared
       hash: md5
-      md5: 2b9426a7215b4112534a6a08eaa70e63.dir
-      size: 6616407
+      md5: 97b0a258483777ade7e701028de020ab.dir
+      size: 6616408
       nfiles: 8
     - path: src/train.py
       hash: md5
@@ -59,7 +59,7 @@ stages:
     outs:
     - path: model
       hash: md5
-      md5: dfd1c628598f0ecae5a2e10a57e8fdbc.dir
+      md5: 4bca66b68a524241607c5ee30aecf8a1.dir
       size: 2501987
       nfiles: 2
   evaluate:
@@ -67,7 +67,7 @@ stages:
     deps:
     - path: model
       hash: md5
-      md5: dfd1c628598f0ecae5a2e10a57e8fdbc.dir
+      md5: 4bca66b68a524241607c5ee30aecf8a1.dir
       size: 2501987
       nfiles: 2
     - path: src/evaluate.py

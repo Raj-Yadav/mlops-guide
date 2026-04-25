@@ -4,3 +4,5 @@ pyyaml==6.0.3
 dvc
 dvc[azure]
 azure-storage-blob==12.14.0
+bentoml
+pillow

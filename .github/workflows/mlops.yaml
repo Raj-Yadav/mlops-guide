@@ -31,7 +31,7 @@ jobs:
           # DVC automatically looks for this environment variable when accessing an azure:// remote
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         run: |
-          dvc pull -r azure://dvcdata
+          dvc pull -r myremote
 
       - name: Reproduce the ML Pipeline
         run: |

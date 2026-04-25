@@ -1,0 +1,6 @@
+[core]
+    analytics = false
+    remote = myremote
+['remote "myremote"']
+    url = azure://dvcdata
+    account_name = dvcmlopsblobstorage

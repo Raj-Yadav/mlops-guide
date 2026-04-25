@@ -7,7 +7,7 @@ __pycache__/
 .dvc/tmp/
 .dvc/cache/
 .dvc/config.local
-.dvc/config
+# .dvc/config
 
 ## DVC Plots
 dvc_plots/

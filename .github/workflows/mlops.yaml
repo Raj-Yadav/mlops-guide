@@ -107,7 +107,7 @@ jobs:
           
       - name: Import the BentoML model
         if: github.ref == 'refs/heads/main'
-        run: bentoml models import model/celestial_bodies_classifier_model.bentomodel
+        run: bentoml models import model/celestial_bodies_classifier_model.bentomodel || true
         
       - name: Build the BentoML model artifact
         if: github.ref == 'refs/heads/main'

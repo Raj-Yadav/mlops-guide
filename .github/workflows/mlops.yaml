@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --requirement requirements-freeze.txt
+          pip install -r requirements.txt
           pip install "dvc[azure]"
 
       - name: Train model

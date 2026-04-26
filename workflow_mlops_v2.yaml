@@ -1,42 +1,50 @@
-name: MLOps
+name: MLOps Pipeline
 
 on:
   # Runs on pushes targeting main branch
   push:
     branches:
       - main
-
   # Runs on pull requests
   pull_request:
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  train-report-and-publish:
-    permissions: write-all
+  train-and-report:
+    # write-all permission is required for CML to post comments on Pull Requests
+    permissions: write-all 
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12' # Kept your current Python version
           cache: pip
+
       - name: Install dependencies
-        run: pip install --requirement requirements-freeze.txt
-      - name: Login to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}'
+        run: |
+          pip install -r requirements.txt
+          # The azure extra is mandatory for DVC to communicate with Azure Blob Storage
+          pip install "dvc[azure]"
+
       - name: Train model
+        env:
+          # Inject Azure credentials directly into the train step
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        # --pull automatically fetches data from Azure before reproducing
         run: dvc repro --pull
+
       - name: Setup CML
         if: github.event_name == 'pull_request'
         uses: iterative/setup-cml@v2
         with:
           version: '0.20.6'
+
       - name: Create CML report
         if: github.event_name == 'pull_request'
         env:
@@ -85,24 +93,3 @@ jobs:
 
           # Publish the CML report
           cml comment update --target=pr --publish report.md
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.GCP_CONTAINER_REGISTRY_HOST }}
-          username: _json_key
-          password: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-      - name: Import the BentoML model
-        if: github.ref == 'refs/heads/main'
-        run: bentoml models import model/celestial_bodies_classifier_model.bentomodel
-      - name: Build the BentoML model artifact
-        if: github.ref == 'refs/heads/main'
-        run: bentoml build src
-      - name: Containerize and publish the BentoML model artifact Docker image
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # Containerize the Bento
-          bentoml containerize celestial_bodies_classifier:latest \
-            --image-tag ${{ secrets.GCP_CONTAINER_REGISTRY_HOST }}/celestial-bodies-classifier:latest \
-            --image-tag ${{ secrets.GCP_CONTAINER_REGISTRY_HOST }}/celestial-bodies-classifier:${{ github.sha }}
-          # Push the container to the Container Registry
-          docker push --all-tags ${{ secrets.GCP_CONTAINER_REGISTRY_HOST }}/celestial-bodies-classifier

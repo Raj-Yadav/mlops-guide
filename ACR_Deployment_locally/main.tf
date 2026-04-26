@@ -28,7 +28,17 @@ resource "azurerm_container_registry" "acr" {
   admin_enabled       = true 
 }
 
-# 3. Output the credentials needed for Docker
+# 3. Create the storage account
+resource "azurerm_storage_account" "dvc_storage" {
+  # IMPORTANT: Change the numbers below to something random so the name is globally unique
+  name                     = "mlopsdvcstorage8392" 
+  resource_group_name      = azurerm_resource_group.mlops_rg.name
+  location                 = azurerm_resource_group.mlops_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+# 4. Output the credentials needed for Docker
 output "registry_login_server" {
   value = azurerm_container_registry.acr.login_server
 }

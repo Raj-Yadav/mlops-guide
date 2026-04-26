@@ -16,7 +16,7 @@ dvc_plots/
 .terraform/
 *.tfstate
 *.tfstate.backup
-.terraform.lock.hcl
+
 
 # DVC tracked data (Example: ignoring the actual model file, but not the .dvc pointer)
 /model

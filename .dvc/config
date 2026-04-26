@@ -2,4 +2,4 @@
     remote = azureremote
 ['remote "azureremote"']
     url = azure://dvc
-    account_name = dvcmloblobstorage
+    account_name = mlopsdvcstorage8392

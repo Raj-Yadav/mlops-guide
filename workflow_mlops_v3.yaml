@@ -13,38 +13,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  train-report-publish-and-deploy:
+  train-report-and-publish:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
+        
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
           cache: pip
-
+          
       - name: Install dependencies
         run: |
-          pip install --requirement requirements-freeze.txt
-          pip install "dvc[azure]"
-
+          pip install -r requirements.txt
+          # Explicitly installing the Azure extension for DVC
+          pip install "dvc[azure]" 
+          
       - name: Train model
         env:
-          # Azure identity for DVC to pull/push data
+          # DVC uses DefaultAzureCredential which automatically looks for these variables
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         run: dvc repro --pull
-
+        
       - name: Setup CML
         if: github.event_name == 'pull_request'
         uses: iterative/setup-cml@v2
         with:
           version: '0.20.6'
-
+          
       - name: Create CML report
         if: github.event_name == 'pull_request'
         env:
@@ -93,24 +94,25 @@ jobs:
 
           # Publish the CML report
           cml comment update --target=pr --publish report.md
-
+          
       - name: Log in to Azure Container Registry
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.AZURE_ACR_LOGIN_SERVER }}
+          # The Service Principal App ID acts as the username
           username: ${{ secrets.AZURE_CLIENT_ID }}
+          # The Service Principal Password acts as the password
           password: ${{ secrets.AZURE_CLIENT_SECRET }}
-
+          
       - name: Import the BentoML model
         if: github.ref == 'refs/heads/main'
-        # Added '|| true' to prevent failure if training script already saved the model
         run: bentoml models import model/celestial_bodies_classifier_model.bentomodel || true
-
+        
       - name: Build the BentoML model artifact
         if: github.ref == 'refs/heads/main'
         run: bentoml build src
-
+        
       - name: Containerize and publish the BentoML model artifact Docker image
         if: github.ref == 'refs/heads/main'
         run: |
@@ -118,30 +120,6 @@ jobs:
           bentoml containerize celestial_bodies_classifier:latest \
             --image-tag ${{ secrets.AZURE_ACR_LOGIN_SERVER }}/celestial-bodies-classifier:latest \
             --image-tag ${{ secrets.AZURE_ACR_LOGIN_SERVER }}/celestial-bodies-classifier:${{ github.sha }}
-          # Push the container to ACR
+            
+          # Push the container to the Azure Container Registry
           docker push --all-tags ${{ secrets.AZURE_ACR_LOGIN_SERVER }}/celestial-bodies-classifier
-
-      - name: Log in to Azure (for AKS credentials)
-        if: github.ref == 'refs/heads/main'
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Get Azure Kubernetes Service credentials
-        if: github.ref == 'refs/heads/main'
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: "bentoml-mlops-rg"
-          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
-
-      - name: Update the Kubernetes deployment
-        if: github.ref == 'refs/heads/main'
-        run: |
-          yq -i '.spec.template.spec.containers[0].image = "${{ secrets.AZURE_ACR_LOGIN_SERVER }}/celestial-bodies-classifier:${{ github.sha }}"' kubernetes/deployment.yaml
-
-      - name: Deploy the model on Kubernetes
-        if: github.ref == 'refs/heads/main'
-        run: |
-          kubectl apply \
-            -f kubernetes/deployment.yaml \
-            -f kubernetes/service.yaml

@@ -1,5 +1,5 @@
 [core]
-    remote = azureremote
-['remote "azureremote"']
-    url = azure://dvc
+    remote = azure_remote
+['remote "azure_remote"']
+    url = azure://dvcdata
     account_name = mlopsdvcstorage8392
